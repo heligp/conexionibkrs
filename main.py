@@ -1,4 +1,3 @@
-print("Hello World")
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
 from ibapi.contract import Contract
@@ -9,7 +8,7 @@ class IBApi(EWrapper, EClient):
     def __init__(self):
         EClient.__init__(self, self)
 
-    def error(self, reqId, errorCode, errorString):
+    def error(self, reqId, errorCode, errorString, advancedOrderRejectJson):
         print(f"Error: {reqId}, Code: {errorCode}, Msg: {errorString}")
 
     def nextValidId(self, orderId):
@@ -36,16 +35,21 @@ time.sleep(1)
 
 # Crear un contrato para solicitar datos (ejemplo: acciones de Apple)
 contract = Contract()
-contract.symbol = "AAPL"
-contract.secType = "STK"
-contract.exchange = "SMART"
+contract.symbol = "EUR"
+contract.secType = "CASH"
+contract.exchange = "IDEALPRO"
 contract.currency = "USD"
 
-# Solicitar los detalles del contrato
-app.reqContractDetails(1001, contract)
+# # Solicitar los detalles del contrato
+# app.reqContractDetails(1001, contract)
 
-# Esperar unos segundos antes de desconectar
-time.sleep(10)
+# Solicitar en tiempo real
+app.reqMktData(1001, contract, "", False, False, [])
 
-# Desconectar de la API
-app.disconnect()
+
+try:
+    while True:
+        time.sleep(1)
+except KeyboardInterrupt:
+    print("Desconectando...")
+    app.disconnect()
