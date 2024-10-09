@@ -1,0 +1,4 @@
+*.pkl
+crear_modelo.ipynb
+conexionibkr/*
+data/zarrs/*

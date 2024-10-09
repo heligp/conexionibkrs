@@ -4,11 +4,13 @@ from ibapi.contract import Contract
 import threading
 import time
 
+
+            
 class IBApi(EWrapper, EClient):
     def __init__(self):
         EClient.__init__(self, self)
 
-    def error(self, reqId, errorCode, errorString, advancedOrderRejectJson):
+    def error(self, reqId, errorCode, errorString,advancedOrderRejectJson):
         print(f"Error: {reqId}, Code: {errorCode}, Msg: {errorString}")
 
     def nextValidId(self, orderId):
@@ -17,6 +19,24 @@ class IBApi(EWrapper, EClient):
 
     def contractDetails(self, reqId, contractDetails):
         print(f"Contract Details: {contractDetails}")
+
+    def tickPrice(self, reqId, tickType, price, attrib):
+        # if tickType == 1:  # Precio de oferta (bid)
+        #     print(f"Oferta: {price}")
+        # elif tickType == 2:  # Precio de venta (ask)
+        #     print(f"Venta: {price}")
+        # elif tickType == 4:  # Último precio
+        #     print(f"Último precio: {price}")
+        if tickType == 4:  # Último precio
+            print(f"Último precio: {price}")
+    
+    def tickSize(self, reqId, tickType, size):
+        if tickType == 0:  # Volumen de oferta (bid size)
+            print(f"Volumen de oferta: {size}")
+        elif tickType == 3:  # Volumen de venta (ask size)
+            print(f"Volumen de venta: {size}")
+        elif tickType == 5:  # Volumen negociado
+            print(f"Volumen negociado: {size}")
 
 def run_loop():
     app.run()
@@ -35,9 +55,9 @@ time.sleep(1)
 
 # Crear un contrato para solicitar datos (ejemplo: acciones de Apple)
 contract = Contract()
-contract.symbol = "EUR"
-contract.secType = "CASH"
-contract.exchange = "IDEALPRO"
+contract.symbol = "BTC"
+contract.secType = "CRYPTO"
+contract.exchange = "PAXOS"
 contract.currency = "USD"
 
 # # Solicitar los detalles del contrato
