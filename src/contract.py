@@ -1,10 +1,10 @@
 from ibapi.contract import Contract
 
 # Configurar el contrato para cada ticker
-def crear_contrato(symbol, secType, exchange, currency):
+def crear_contrato(stock):
     contrato = Contract()
-    contrato.symbol = symbol
-    contrato.secType = secType
-    contrato.exchange = exchange
-    contrato.currency = currency
+    contrato.symbol = stock['ticker']
+    contrato.secType = stock['sectype']
+    contrato.exchange = stock['exchange']
+    contrato.currency = stock['currency']
     return contrato

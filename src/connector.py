@@ -1,6 +1,7 @@
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
 from contract import crear_contrato
+from ibapi.order import Order
 
 # Clase para manejar la conexión a IBKR
 class IBKRConnection(EWrapper, EClient):
@@ -11,24 +12,31 @@ class IBKRConnection(EWrapper, EClient):
         self.active_orders = {}  # Diccionario para rastrear órdenes activas
 
     def tickPrice(self, reqId, tickType, price, attrib):
-        # Guardar el precio recibido en el data handler correspondiente al ticker
-        if reqId in self.data_handlers:
-            self.data_handlers[reqId].add_tick(price)
+
+        # Validar que sea el último precio
+        if tickType == 4:
+        # Guardar el precio recibido en el data handler correspondiente al ticker        
+            if reqId in self.data_handlers:
+                self.data_handlers[reqId].add_tick(price)
 
     def tickSize(self, reqId, tickType, size):
-        # Guardar el tamaño (volumen) en el data handler correspondiente al ticker
-        if reqId in self.data_handlers:
-            self.data_handlers[reqId].add_volume(size)
+        
+        # Validar que sea el último precio
+        if tickType == 4:
+            print(size)
+            # Guardar el tamaño (volumen) en el data handler correspondiente al ticker
+            if reqId in self.data_handlers:
+                self.data_handlers[reqId].add_volume(size)
 
-    def enviar_orden(self, ticker, cantidad, direccion, precio=None):
+    def enviar_orden(self, stock, cantidad, direccion, precio=None):
 
         # Verificar si ya hay una orden activa para este ticker
-        if ticker in self.active_orders and self.active_orders[ticker]:
-            print(f"Ya hay una orden activa para {ticker}. No se enviará otra.")
+        if stock['ticker'] in self.active_orders and self.active_orders[stock['ticker']]:
+            print(f"Ya hay una orden activa para {stock['ticker']}. No se enviará otra.")
             return
         
         # Crear un contrato para el ticker
-        contrato = crear_contrato(ticker)
+        contrato = crear_contrato(stock)
 
         # Crear una orden
         orden = Order()
@@ -38,10 +46,10 @@ class IBKRConnection(EWrapper, EClient):
         
         # Enviar la orden
         self.placeOrder(self.nextOrderId, contrato, orden)
-        print(f"Orden enviada: {direccion} {cantidad} acciones de {ticker}")
+        print(f"Orden enviada: {direccion} {cantidad} acciones de {stock['ticker']}")
 
         # Marcar la orden como activa
-        self.active_orders[ticker] = True
+        self.active_orders[stock['ticker']] = True
 
        # Incrementar el contador de ID de órdenes
         self.order_id_counter += 1
