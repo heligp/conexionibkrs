@@ -1,7 +1,7 @@
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
 from contract import crear_contrato
-from ibapi.order import Order
+from order import create_bracket_order
 
 # Clase para manejar la conexión a IBKR
 class IBKRConnection(EWrapper, EClient):
@@ -10,6 +10,7 @@ class IBKRConnection(EWrapper, EClient):
         self.data_handlers = data_handlers  # Diccionario de manejadores de datos para cada ticker
         self.order_id_counter = 1  # Contador de ID de órdenes
         self.active_orders = {}  # Diccionario para rastrear órdenes activas
+        self.executed_price = None # Para almacenar el precio de compra
 
     def tickPrice(self, reqId, tickType, price, attrib):
 
@@ -28,7 +29,7 @@ class IBKRConnection(EWrapper, EClient):
             if reqId in self.data_handlers:
                 self.data_handlers[reqId].add_volume(size)
 
-    def enviar_orden(self, stock, cantidad, direccion, precio=None):
+    def enviar_orden(self, stock, cantidad, direccion, window):
 
         # Verificar si ya hay una orden activa para este ticker
         if stock['ticker'] in self.active_orders and self.active_orders[stock['ticker']]:
@@ -39,11 +40,8 @@ class IBKRConnection(EWrapper, EClient):
         contrato = crear_contrato(stock)
 
         # Crear una orden
-        orden = Order()
-        orden.action = direccion  # 'BUY' o 'SELL'
-        orden.orderType = 'MKT'  # Tipo de orden (por ejemplo, mercado)
-        orden.totalQuantity = cantidad
-        
+        orden = create_bracket_order(stock, cantidad, direccion, window)
+
         # Enviar la orden
         self.placeOrder(self.nextOrderId, contrato, orden)
         print(f"Orden enviada: {direccion} {cantidad} acciones de {stock['ticker']}")
@@ -67,6 +65,9 @@ class IBKRConnection(EWrapper, EClient):
                 if active:  # Si hay una orden activa
                     # Aquí puedes implementar lógica adicional para identificar qué orden
                     self.active_orders[ticker] = False  # Marcar como no activa
+            if status == 'Filled':
+                self.executed_price = avgFillPrice  # Almacenar el precio de compra ejecutado
+
 
     
     

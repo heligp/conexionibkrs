@@ -52,7 +52,7 @@ class DataHandler:
             self.ticks.clear()  # Reiniciar los ticks
             self.volumen_acumulado = 0  # Reiniciar el volumen
 
-            print(f"Barra generada para {self.ticker}: {barra}")
+            print(f"Barra generada para {self.ticker['ticker']}: {barra}")
 
             # Si ya tienes "threshold_features" barras, podrías generar los features y hacer predicciones
             if len(self.barras) > self.threshold_features:
@@ -70,7 +70,7 @@ class DataHandler:
         features_scaled = self.scaler.transform([df_barras])
         prediccion = self.model.predict(features_scaled)
 
-        print(f"Features creados para {self.ticker}: {features_scaled}")
+        print(f"Features creados para {self.ticker['ticker']}: {features_scaled}")
         print("PREDICCION:", prediccion)
 
         # CAMBIAR CON LA PREDICCIÓN DEL MODELO DE SIZE!!!
@@ -83,9 +83,9 @@ class DataHandler:
         # Implementa tu lógica para decidir si enviar una orden
         # Ejemplo simple: si el primer feature es positivo, compra "cantidad" acciones, si es negativo, vende "cantidad" acciones
         if prediccion == 1:
-            self.connection.enviar_orden(self.ticker, cantidad, 'BUY')
+            self.connection.enviar_orden(self.ticker, cantidad, 'BUY', 500)
         elif prediccion == -1:
-            self.connection.enviar_orden(self.ticker, cantidad, 'SELL')
+            self.connection.enviar_orden(self.ticker, cantidad, 'SELL', 500)
         else:
             return
 
