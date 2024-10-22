@@ -1,5 +1,7 @@
 from features import calcular_features
 import pandas as pd
+import numpy as np
+from decimal import Decimal
 
 class DataHandler:
     def __init__(self, 
@@ -68,13 +70,15 @@ class DataHandler:
 
         # Aquí haces el escalado y predicciones con el modelo cargado
         features_scaled = self.scaler.transform([df_barras])
+        features_scaled = np.array([ 5.17494903,-0.12727621 ,0.93853602]).reshape(1, -1) ### QUITAR!!
+        self.threshold_features = 1000000
         prediccion = self.model.predict(features_scaled)
 
         print(f"Features creados para {self.ticker['ticker']}: {features_scaled}")
         print("PREDICCION:", prediccion)
 
         # CAMBIAR CON LA PREDICCIÓN DEL MODELO DE SIZE!!!
-        cantidad = 1
+        cantidad = 100
 
         # Aquí decides si enviar una orden en función de los features
         self.evaluar_y_enviar_orden(prediccion, cantidad)
@@ -82,11 +86,16 @@ class DataHandler:
     def evaluar_y_enviar_orden(self, prediccion, cantidad):
         # Implementa tu lógica para decidir si enviar una orden
         # Ejemplo simple: si el primer feature es positivo, compra "cantidad" acciones, si es negativo, vende "cantidad" acciones
-        if prediccion == 1:
-            self.connection.enviar_orden(self.ticker, cantidad, 'BUY', 500)
-        elif prediccion == -1:
-            self.connection.enviar_orden(self.ticker, cantidad, 'SELL', 500)
-        else:
-            return
+        try:
+            if prediccion == 1:
+                print(f"Enviando orden de compra para {self.ticker['ticker']}")
+                self.connection.enviar_orden(self.ticker, cantidad, 'BUY')
+            elif prediccion == -1:
+                print(f"Enviando orden de venta para {self.ticker['ticker']}")
+                self.connection.enviar_orden(self.ticker, cantidad, 'BUY')
+            else:
+                print(f"No se envía orden para {self.ticker['ticker']} debido a predicción: {prediccion}")
+        except Exception as e:
+            print(f"Error al enviar orden para {self.ticker['ticker']}: {str(e)}")
 
         

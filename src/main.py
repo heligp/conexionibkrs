@@ -7,25 +7,24 @@ from symbols import symbols
 import time
 
 
-
-
-threshold_bar = 50 
-threshold_features = 10
+threshold_bar = .00000005
+threshold_features = 1
 models = [model_btc]
 scalers = [scaler_btc]
 
-
-
-def run_loop():
-    app.run()
-
 # Crear un diccionario de DataHandlers para cada ticker
-data_handlers = {i: DataHandler(symbol, threshold_bar, threshold_features, None, models[0], scalers[0]) for i, symbol in enumerate(symbols)}    
+data_handlers = {i: DataHandler(symbol, threshold_bar, threshold_features, None, models[0], scalers[0]) for i, symbol in symbols.items()}    
 
 # Iniciar la conexión a IBKR y pasar los data handlers
 app = IBKRConnection(data_handlers)
 app.connect("127.0.0.1", 7497, 0)
 time.sleep(5)
+app.reqOpenOrders()
+app.cancelar_ordenes_pendientes()  # Cancelar todas las órdenes pendientes
+
+
+def run_loop():
+    app.run()
 
 # Asignar la conexión a cada DataHandler
 for handler in data_handlers.values():
@@ -37,14 +36,14 @@ api_thread.start()
 
 # Solicitar datos de mercado para cada ticker
 for reqId, ticker in enumerate(list(symbols.values())):
-    print(ticker)
     contrato = crear_contrato(ticker)
-    app.reqMktData(reqId, contrato, "", False, False, [])
+    # app.reqMktData(reqId, contrato, "", False, False, [])
+    app.reqTickByTickData(reqId, contrato, "Last", 0, True)
 
 
 try:
     while True:
-        time.sleep(1)
+        time.sleep(.1)
 except KeyboardInterrupt:
     print("Desconectando...")
     app.disconnect()

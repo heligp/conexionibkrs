@@ -1,55 +1,60 @@
 from ibapi.order import Order
 from datetime import datetime, timedelta
+from decimal import Decimal
+from ibapi.order import Order
 
-def create_bracket_order_with_expiry(action, quantity, ventana, current_price):
+
+
+
+def create_orden_market(direction, quantity):
+    orden_market = Order()
+    orden_market.action = direction
+    orden_market.orderType = "MKT"  # Orden Market
+    orden_market.cashQty = quantity
+    orden_market.totalQuantity = 0
+    orden_market.tif = "IOC"
+    return orden_market
+
+def create_bracket_order_with_expiry(execution_price, parentOrderId, action, quantity, take_profit_diff=10, stop_loss_diff=10, window=5):
     """
-    Crea un Bracket Order (orden con stop loss y take profit) con tiempo de vigencia límite basado en el precio de compra.
-
-    Args:
-    - action: "BUY" o "SELL"
-    - quantity: cantidad de contratos o acciones
-    - take_profit_offset: distancia desde el precio de compra para el take profit
-    - stop_loss_offset: distancia desde el precio de compra para el stop loss
-    - current_price: precio de compra ejecutado
-    Returns:
-    - Una lista de 3 órdenes: la orden principal, el stop loss y el take profit
+    Crear una orden bracket con take profit, stop loss y tiempo límite de ejecución.
+    
+    :param execution_price: Precio al que se ejecutó la orden Market.
+    :param parentOrderId: ID de la orden principal.
+    :param action: 'BUY' o 'SELL'.
+    :param quantity: Cantidad de la orden.
+    :param take_profit_diff: Diferencia de precio para el take profit (+10 por defecto).
+    :param stop_loss_diff: Diferencia de precio para el stop loss (-10 por defecto).
+    :param window: Ventana de tiempo para la vigencia de la orden en horas.
+    :return: Lista de órdenes bracket (take profit y stop loss).
     """
     
-    # Obtener la fecha de vigencia en 5 horas desde ahora
-    expiry_time = (datetime.now() + timedelta(hours=5)).strftime("%Y%m%d %H:%M:%S")
+    # Calcular la fecha y hora de expiración (5 horas desde ahora)
+    expiry_time = datetime.now() + timedelta(hours=window)
+    tif_gtd = expiry_time.strftime("%Y%m%d %H:%M:%S")
     
-    # 1. Crear la orden principal
-    parent_order = Order()
-    parent_order.orderId = 1  # Necesitas asignar dinámicamente el ID
-    parent_order.action = action
-    parent_order.orderType = "MKT"  # Orden de mercado
-    parent_order.totalQuantity = quantity
-    parent_order.goodTillDate = expiry_time  # Orden válida hasta 5 horas desde ahora
-    parent_order.transmit = False  # No enviar aún la orden, hasta que estén listas las secundarias
+    # Orden de take profit
+    take_profit = Order()
+    take_profit.orderId = parentOrderId + 1
+    take_profit.action = "SELL" if action == "BUY" else "BUY"
+    take_profit.orderType = "LMT"
+    take_profit.totalQuantity = quantity
+    take_profit.lmtPrice = execution_price + take_profit_diff if action == "BUY" else execution_price - take_profit_diff
+    take_profit.parentId = parentOrderId
+    take_profit.transmit = False  # No transmitir hasta que las dos órdenes estén listas
+    take_profit.tif = "GTD"  # Good Till Date
+    take_profit.goodTillDate = tif_gtd
 
-    # 2. Crear la orden de Take Profit
-    take_profit_price = current_price + ventana if action == "BUY" else current_price - ventana
-    take_profit_order = Order()
-    take_profit_order.orderId = 2  # Necesitas asignar dinámicamente el ID
-    take_profit_order.action = "SELL" if action == "BUY" else "BUY"
-    take_profit_order.orderType = "LMT"  # Orden límite
-    take_profit_order.totalQuantity = quantity
-    take_profit_order.lmtPrice = take_profit_price
-    take_profit_order.goodTillDate = expiry_time  # Vigencia de la orden take profit
-    take_profit_order.parentId = parent_order.orderId  # Vincular al padre
-    take_profit_order.transmit = False  # No enviar aún la orden
+    # Orden de stop loss
+    stop_loss = Order()
+    stop_loss.orderId = parentOrderId + 2
+    stop_loss.action = "SELL" if action == "BUY" else "BUY"
+    stop_loss.orderType = "STP"
+    stop_loss.totalQuantity = quantity
+    stop_loss.auxPrice = execution_price - stop_loss_diff if action == "BUY" else execution_price + stop_loss_diff
+    stop_loss.parentId = parentOrderId
+    stop_loss.transmit = True  # Transmitir todas las órdenes en este punto
+    stop_loss.tif = "GTD"  # Good Till Date
+    stop_loss.goodTillDate = tif_gtd
 
-    # 3. Crear la orden de Stop Loss
-    stop_loss_price = current_price - ventana if action == "BUY" else current_price + ventana
-    stop_loss_order = Order()
-    stop_loss_order.orderId = 3  # Necesitas asignar dinámicamente el ID
-    stop_loss_order.action = "SELL" if action == "BUY" else "BUY"
-    stop_loss_order.orderType = "STP"  # Orden de stop
-    stop_loss_order.totalQuantity = quantity
-    stop_loss_order.auxPrice = stop_loss_price  # Precio de activación del stop loss
-    stop_loss_order.goodTillDate = expiry_time  # Vigencia de la orden stop loss
-    stop_loss_order.parentId = parent_order.orderId  # Vincular al padre
-    stop_loss_order.transmit = True  # Ahora sí transmitir las tres órdenes (al transmitir la última)
-
-    # Devuelve las 3 órdenes como parte del bracket
-    return [parent_order, take_profit_order, stop_loss_order]
+    return [take_profit, stop_loss]
