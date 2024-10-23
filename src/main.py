@@ -21,9 +21,6 @@ data_handlers = {i: DataHandler(symbol, threshold_bar, threshold_features, None,
 app = IBKRConnection(data_handlers)
 app.connect("127.0.0.1", 7497, 0)
 time.sleep(1)
-app.reqOpenOrders()
-app.cancelar_ordenes_pendientes()  # Cancelar todas las órdenes pendientes
-
 
 def run_loop():
     app.run()
@@ -40,11 +37,6 @@ api_thread.start()
 for reqId, ticker in enumerate(list(symbols.values())):
     contrato = crear_contrato(ticker)
     app.reqMktData(reqId, contrato, "", False, False, [])
-    # app.reqMarketDataType(3)
-    # app.reqMktData(reqId, contrato, "", False, False, [])
-
-    # app.reqTickByTickData(reqId, contrato, "Last", 0, True)
-
 
 try:
     while True:

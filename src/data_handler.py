@@ -91,7 +91,7 @@ class DataHandler:
         
         if prediccion == 1:
             print(f"Enviando orden de compra para {self.ticker['ticker']}")
-            self.connection.enviar_orden(self.ticker, cantidad, 'BUY', diferencial)
+            self.connection.enviar_mensaje(self.ticker, cantidad, 'BUY', diferencial)
         elif prediccion == -1:
             print(f"Enviando orden de venta para {self.ticker['ticker']}")
-            self.connection.enviar_orden(self.ticker, cantidad, 'BUY', diferencial)
+            self.connection.enviar_mensaje(self.ticker, cantidad, 'BUY', diferencial)
