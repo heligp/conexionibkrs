@@ -1,90 +1,46 @@
-from ibapi.order import Order
-from datetime import datetime, timedelta
-from decimal import Decimal
-from ibapi.order import Order
+from ibapi.order import Order  # Importa la clase Order para crear órdenes de mercado
+from datetime import datetime, timedelta  # Importa funciones de manejo de fechas
+from decimal import Decimal  # Importa el tipo Decimal para manejar valores precisos
+from ibapi.order import Order  # Repetido, no es necesario
 
-
-def create_orden_market(direction, quantity):
-    orden_market = Order()
-    orden_market.action = direction
-    orden_market.orderType = "MKT"  # Orden Market
-    orden_market.cashQty = quantity
-    orden_market.totalQuantity = 0
-    # orden_market.totalQuantity = quantity
-    orden_market.tif = "IOC"
-
-    
-    return orden_market
-
-
+# Función para crear una orden de mercado con órdenes asociadas (bracket orders) de take profit y stop loss
 def create_orden_market_con_bracket(orderid, direction, quantity, dif, price):
-    orden_market = Order()
-    orden_market.orderId = orderid
-    orden_market.action = direction
-    orden_market.orderType = "MKT"  # Orden Market
-    orden_market.cashQty = quantity
-    # orden_market.totalQuantity = round(quantity / price,8)
-    orden_market.totalQuantity = ""
-    # orden_market.totalQuantity = quantity
-    orden_market.tif = "IOC"
-    orden_market.transmit = False
-    
-    take_profit = Order()
-    take_profit.orderId = orden_market.orderId + 1
-    take_profit.action = "SELL" if direction == "BUY" else "BUY"
-    take_profit.orderType = "LMT"
-    take_profit.totalQuantity = round(quantity / price,8)
-    # take_profit.cashQty = quantity
-    # take_profit.totalQuantity = 0
-    take_profit.lmtPrice = price + dif if direction == "BUY" else price - dif
-    take_profit.parentId = orden_market.orderId
-    take_profit.transmit = True 
-    
-    return [orden_market, take_profit]
-
-def create_bracket_order_with_expiry(execution_price, parentOrderId, action, quantity, take_profit_diff=10, stop_loss_diff=10):
     """
-    Crear una orden bracket con take profit, stop loss y tiempo límite de ejecución.
-    
-    :param execution_price: Precio al que se ejecutó la orden Market.
-    :param parentOrderId: ID de la orden principal.
-    :param action: 'BUY' o 'SELL'.
-    :param quantity: Cantidad de la orden.
-    :param take_profit_diff: Diferencia de precio para el take profit (+10 por defecto).
-    :param stop_loss_diff: Diferencia de precio para el stop loss (-10 por defecto).
-    :param window: Ventana de tiempo para la vigencia de la orden en horas.
-    :return: Lista de órdenes bracket (take profit, stop loss y cierre al final del tiempo).
+    Crea una orden de mercado principal con órdenes adicionales de take profit y stop loss (bracket order).
     """
-    
-    
-    # Orden de take profit
-    take_profit = Order()
 
-    take_profit.orderId = parentOrderId + 1
-    take_profit.action = "SELL" if action == "BUY" else "BUY"
-    take_profit.orderType = "LMT"
-    # take_profit.cashQty = 1000
-    # take_profit.totalQuantity = 0
-    take_profit.totalQuantity = quantity
-    take_profit.lmtPrice = execution_price + take_profit_diff if action == "BUY" else execution_price - take_profit_diff
-    take_profit.parentId = parentOrderId
-    take_profit.transmit = True  # No transmitir hasta que las dos órdenes estén listas
-    # take_profit.tif = "GTD"  # Good Till Date
-    # take_profit.goodTillDate = tif_gtd
+    # Orden principal de tipo Market (orden de compra o venta inmediata)
+    orden_market = Order()  # Instancia una nueva orden
+    orden_market.orderId = orderid  # Asigna el ID único de la orden
+    orden_market.action = direction  # Define la acción (compra o venta) basada en "direction" (ej. "BUY" o "SELL")
+    orden_market.orderType = "MKT"  # Define el tipo de orden como Market (MKT)
+    orden_market.cashQty = quantity  # Define la cantidad en términos de dinero en efectivo (cash quantity)
+    # orden_market.totalQuantity = round(quantity / price,8)  # Se puede usar para definir la cantidad total, pero está comentado
+    orden_market.totalQuantity = ""  # Aquí no se define explícitamente la cantidad total, posiblemente se calculará en otro momento
+    orden_market.tif = "IOC"  # Time In Force (TIF) define que la orden debe ejecutarse inmediatamente o cancelarse (Immediate or Cancel)
+    orden_market.transmit = False  # Indica que la orden no se transmitirá aún, ya que primero se deben configurar las órdenes de bracket (take profit y stop loss)
 
-    # Orden de stop loss
-    # stop_loss = Order()
-    # stop_loss.orderId = parentOrderId + 2
-    # stop_loss.action = "SELL" if action == "BUY" else "BUY"
-    # stop_loss.orderType = "STP"
-    # stop_loss.cashQty = 1000
-    # stop_loss.totalQuantity = 0
-    # # stop_loss.totalQuantity = quantity
-    # stop_loss.auxPrice = execution_price - stop_loss_diff if action == "BUY" else execution_price + stop_loss_diff
-    # stop_loss.parentId = parentOrderId
-    # stop_loss.transmit = True  # No transmitir hasta que las dos órdenes estén listas
-    # stop_loss.tif = "GTD"
-    # stop_loss.goodTillDate = tif_gtd
+    # Orden Take Profit: se ejecuta cuando se alcanza un precio objetivo favorable
+    take_profit = Order()  # Instancia una nueva orden para Take Profit
+    take_profit.orderId = orden_market.orderId + 1  # El ID de la orden de Take Profit es consecutivo al de la orden principal
+    take_profit.action = "SELL" if direction == "BUY" else "BUY"  # Si la orden principal es una compra, la orden de Take Profit será de venta y viceversa
+    take_profit.orderType = "LMT"  # Define el tipo de orden como Limit (LMT), es decir, se ejecuta a un precio límite o mejor
+    take_profit.totalQuantity = round(quantity / price, 8)  # Calcula la cantidad total basada en el precio
+    # take_profit.cashQty = quantity  # Esta línea está comentada, pero podría usarse para definir la cantidad en efectivo
+    take_profit.lmtPrice = price + dif if direction == "BUY" else price - dif  # El precio límite será el precio actual más/menos la diferencia ("dif")
+    take_profit.parentId = orden_market.orderId  # Indica que esta orden está vinculada a la orden principal (bracket order)
+    take_profit.transmit = False  # No transmitir aún, ya que falta configurar el Stop Loss
 
+    # Orden Stop Loss: se ejecuta cuando el precio va en contra de la posición para limitar pérdidas
+    stop_loss = Order()  # Instancia una nueva orden para Stop Loss
+    stop_loss.orderId = orden_market.orderId + 2  # El ID de la orden de Stop Loss es consecutivo al de Take Profit
+    stop_loss.action = "SELL" if direction == "BUY" else "BUY"  # Si la orden principal es una compra, el Stop Loss será una orden de venta, y viceversa
+    stop_loss.orderType = "STP"  # Define el tipo de orden como Stop (STP), que se activa cuando se alcanza un precio de activación
+    stop_loss.totalQuantity = 0  # Define la cantidad total de la orden, puede que se defina después
+    stop_loss.auxPrice = price - price - dif if direction == "BUY" else price + dif
+    # El precio auxiliar (auxPrice) para activar el Stop Loss se calcula restando (para compras) o sumando (para ventas) un valor diferencial al precio de ejecución.
+    stop_loss.parentId = orden_market.orderId  # Indica que esta orden está vinculada a la orden principal (bracket order)
+    stop_loss.transmit = True  # Esta vez transmitimos la orden, ya que todas las órdenes están configuradas correctamente
 
-    return [take_profit]
+    # Devuelve las tres órdenes: la principal, la de Take Profit, y la de Stop Loss
+    return [orden_market, take_profit, stop_loss]
