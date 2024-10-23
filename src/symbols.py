@@ -2,6 +2,11 @@ tickers = ['BTC']
 sectype = ["CRYPTO"]
 exchange = ["PAXOS"]
 currency = ["USD"]
+# tickers = ['AAPL']
+# sectype = ["STK"]
+# exchange = ["SMART"]
+# currency = ["USD"]
+
 
 symbols = {}
 for idx, (t, s, e, c) in enumerate(zip(tickers, sectype, exchange, currency)):
