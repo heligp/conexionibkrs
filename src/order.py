@@ -8,15 +8,15 @@ def create_orden_market_con_bracket(orderid, direction, quantity, dif, price):
     """
     Crea una orden de mercado principal con órdenes adicionales de take profit y stop loss (bracket order).
     """
-
+    quantity = 100
     # Orden principal de tipo Market (orden de compra o venta inmediata)
     orden_market = Order()  # Instancia una nueva orden
     orden_market.orderId = orderid  # Asigna el ID único de la orden
     orden_market.action = direction  # Define la acción (compra o venta) basada en "direction" (ej. "BUY" o "SELL")
     orden_market.orderType = "MKT"  # Define el tipo de orden como Market (MKT)
-    orden_market.cashQty = quantity  # Define la cantidad en términos de dinero en efectivo (cash quantity)
+    # orden_market.cashQty = quantity  # Define la cantidad en términos de dinero en efectivo (cash quantity)
     # orden_market.totalQuantity = round(quantity / price,8)  # Se puede usar para definir la cantidad total, pero está comentado
-    orden_market.totalQuantity = ""  # Aquí no se define explícitamente la cantidad total, posiblemente se calculará en otro momento
+    orden_market.totalQuantity = quantity  # Aquí no se define explícitamente la cantidad total, posiblemente se calculará en otro momento
     orden_market.tif = "IOC"  # Time In Force (TIF) define que la orden debe ejecutarse inmediatamente o cancelarse (Immediate or Cancel)
     orden_market.transmit = False  # Indica que la orden no se transmitirá aún, ya que primero se deben configurar las órdenes de bracket (take profit y stop loss)
 
@@ -25,7 +25,8 @@ def create_orden_market_con_bracket(orderid, direction, quantity, dif, price):
     take_profit.orderId = orden_market.orderId + 1  # El ID de la orden de Take Profit es consecutivo al de la orden principal
     take_profit.action = "SELL" if direction == "BUY" else "BUY"  # Si la orden principal es una compra, la orden de Take Profit será de venta y viceversa
     take_profit.orderType = "LMT"  # Define el tipo de orden como Limit (LMT), es decir, se ejecuta a un precio límite o mejor
-    take_profit.totalQuantity = round(quantity / price, 8)  # Calcula la cantidad total basada en el precio
+    # take_profit.totalQuantity = round(quantity / price, 8)  # Calcula la cantidad total basada en el precio
+    take_profit.totalQuantity = quantity  # Calcula la cantidad total basada en el precio
     # take_profit.cashQty = quantity  # Esta línea está comentada, pero podría usarse para definir la cantidad en efectivo
     take_profit.lmtPrice = price + dif if direction == "BUY" else price - dif  # El precio límite será el precio actual más/menos la diferencia ("dif")
     take_profit.parentId = orden_market.orderId  # Indica que esta orden está vinculada a la orden principal (bracket order)
@@ -36,8 +37,9 @@ def create_orden_market_con_bracket(orderid, direction, quantity, dif, price):
     stop_loss.orderId = orden_market.orderId + 2  # El ID de la orden de Stop Loss es consecutivo al de Take Profit
     stop_loss.action = "SELL" if direction == "BUY" else "BUY"  # Si la orden principal es una compra, el Stop Loss será una orden de venta, y viceversa
     stop_loss.orderType = "STP"  # Define el tipo de orden como Stop (STP), que se activa cuando se alcanza un precio de activación
-    stop_loss.totalQuantity = 0  # Define la cantidad total de la orden, puede que se defina después
-    stop_loss.auxPrice = price - price - dif if direction == "BUY" else price + dif
+    stop_loss.totalQuantity = quantity  # Define la cantidad total de la orden, puede que se defina después
+    # stop_loss.totalQuantity = 0  # Define la cantidad total de la orden, puede que se defina después
+    stop_loss.auxPrice = price - dif if direction == "BUY" else price + dif
     # El precio auxiliar (auxPrice) para activar el Stop Loss se calcula restando (para compras) o sumando (para ventas) un valor diferencial al precio de ejecución.
     stop_loss.parentId = orden_market.orderId  # Indica que esta orden está vinculada a la orden principal (bracket order)
     stop_loss.transmit = True  # Esta vez transmitimos la orden, ya que todas las órdenes están configuradas correctamente

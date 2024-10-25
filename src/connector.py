@@ -1,7 +1,7 @@
 from ibapi.client import EClient  # Clase base para crear un cliente de IBKR (Interactive Brokers)
 from ibapi.wrapper import EWrapper  # Clase base para recibir datos y eventos de IBKR
 from contract import crear_contrato  # Función para crear contratos de mercado
-from order import create_bracket_order_with_expiry, create_orden_market, create_orden_market_con_bracket  # Funciones para crear diferentes tipos de órdenes
+from order import  create_orden_market_con_bracket  # Funciones para crear diferentes tipos de órdenes
 from ibapi.common import TickAttribLast, TickerId, TickAttrib  # Clases para atributos comunes de IBKR
 from ibapi.ticktype import TickType  # Tipos de tick (precio, volumen, etc.)
 from ibapi.utils import floatMaxString, decimalMaxString, intMaxString  # Utilidades de IBKR para formateo
@@ -103,11 +103,13 @@ class IBKRConnection(EWrapper, EClient):
         ordenes = create_orden_market_con_bracket(order_id, direccion, cantidad, dif, ultimo_tick)
 
         # Envía las órdenes al mercado
-        for orden in ordenes:
+        for idx, orden in enumerate(ordenes):
             self.placeOrder(orden.orderId, contrato, orden)  # Coloca la orden
             print(orden.orderId)  # Muestra el orderId
             self.nextOrderId()  # Obtiene el siguiente orderId
             print(f"Orden enviada: {direccion} {cantidad} acciones de {ticker}")
+            if idx == 0:
+                self.active_orders[orden.orderId] = ticker
 
     # Función para recibir el siguiente orderId válido
     def nextValidId(self, orderId: int):
@@ -121,22 +123,30 @@ class IBKRConnection(EWrapper, EClient):
         return current_id  # Retorna el orderId actual
 
     # Función que muestra el estado de una orden
-    def orderStatus(self, orderId, status, filled, remaining, avgFillPrice, permId, parentId, lastFillPrice, clientId, whyHeld, mktCapPrice):
-        print(f"Estado de la orden ID {orderId}: {status}, llenada: {filled}, restante: {remaining}")
+ # Función que maneja el estado de las órdenes
+def orderStatus(self, orderId: int, status: str, filled: Decimal, remaining: Decimal, avgFillPrice: float, permId: int, parentId: int, lastFillPrice: float, clientId: int, whyHeld: str, mktCapPrice: float):
+    ticker = self.order_map.get(orderId)
+    
+    if status in ["Filled", "Cancelled"]:
+        # Actualiza el estado de la orden a inactiva
+        self.active_orders[ticker] = False
+        
+        # Si es una orden de bracket
+        if ticker in self.order_brackets_map and orderId in self.order_brackets_map[ticker]:
+            # Elimina el ID de la orden del mapa de brackets pendientes
+            self.order_brackets_map[ticker].remove(orderId)
+            if not self.order_brackets_map[ticker]:  # Si no quedan órdenes de bracket pendientes
+                del self.order_brackets_map[ticker]
+        
+        # Verifica si todas las órdenes han sido llenadas o canceladas
+        if ticker not in self.order_brackets_map:
+            self.brackets_pendientes[ticker] = False  # Marca el bracket como completado
 
-        # # Si la orden fue cancelada o está inactiva, no se hace nada
-        # if status in ['Cancelled', 'Inactive']:
-        #     return
-
-        # # Si la orden fue completamente llenada
-        # if status == 'Filled' and remaining <= 0.00000001:
-        #     # Si el orderId no está en parentIds y no tiene un parentId, lo añade
-        #     if orderId not in self.parentIds:
-        #         if parentId == 0:
-        #             self.parentIds.append(orderId)
-        #             self.brackets_pendientes[self.current_contract.symbol] = True  # Marca el bracket como pendiente
-        #         else:
-        #             self.brackets_pendientes[self.current_contract.symbol] = False  # Marca el bracket como completado
+    elif status in ["Submitted", "PreSubmitted"]:
+        # Marca la orden como activa si está en espera de ejecución
+        self.active_orders[ticker] = True
+        if ticker in self.order_brackets_map:
+            self.brackets_pendientes[ticker] = True  # Indica que el bracket aún está pendiente
 
         # Información en tiempo real
         # def tickByTickAllLast(self, reqId: int, tickType: int, time: int, price: float, size: Decimal, tickAtrribLast: TickAttribLast, exchange: str, specialConditions: str):

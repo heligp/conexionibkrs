@@ -72,7 +72,7 @@ class DataHandler:
         # Aquí haces el escalado y predicciones con el modelo cargado
         features_scaled = self.scaler.transform([df_barras])
         features_scaled = np.array([5.17494903,-0.12727621 ,0.93853602]).reshape(1, -1) ### QUITAR!!
-        self.threshold_features = 1000000
+        # self.threshold_features = 1000000
         prediccion = self.model.predict(features_scaled)
 
         print(f"Features creados para {self.ticker['ticker']}: {features_scaled}")
@@ -80,7 +80,7 @@ class DataHandler:
 
         # CAMBIAR CON LA PREDICCIÓN DEL MODELO DE SIZE!!!
         cantidad = 1000
-        diferencial = 10
+        diferencial = 0.2
 
         # Aquí decides si enviar una orden en función de los features
         self.evaluar_y_enviar_orden(prediccion, cantidad, diferencial)
