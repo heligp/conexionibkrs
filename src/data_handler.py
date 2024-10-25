@@ -80,7 +80,7 @@ class DataHandler:
 
         # CAMBIAR CON LA PREDICCIÓN DEL MODELO DE SIZE!!!
         cantidad = 1000
-        diferencial = 0.2
+        diferencial = 0.1
 
         # Aquí decides si enviar una orden en función de los features
         self.evaluar_y_enviar_orden(prediccion, cantidad, diferencial)
