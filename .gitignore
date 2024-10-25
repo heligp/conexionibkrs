@@ -3,4 +3,7 @@ crear_modelo.ipynb
 conexionibkr/*
 data/zarrs/*
 *.csv
+<<<<<<< HEAD
 pythonclient/*
+=======
+>>>>>>> 8dd2abfc0a14e4a9e2a4d125efbeebf1c38989ad
