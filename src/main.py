@@ -1,9 +1,7 @@
-# import sys
-# order_brackets_map = {}
-# x = order_brackets_map.get(1)
-# print(x, type(x))
-# sys.exit()
-
+import sys
+import ibapi
+print(ibapi.__version__)
+sys.exit()
 import threading  # Importa threading para manejar el loop de la API en un hilo separado
 from contract import crear_contrato  # Función para crear contratos de mercado para los tickers
 from connector import IBKRConnection  # Conexión a la API de IBKR (Interactive Brokers)
